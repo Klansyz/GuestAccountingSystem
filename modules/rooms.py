@@ -112,16 +112,14 @@ def delete_room(tree):
     room_number = tree.item(selected_item)["values"][0]
 
     try:
-        # Проверка наличия брони для номера
         query = "SELECT COUNT(*) FROM Bookings WHERE room_number = ?"
         result = execute_query(DB_PATH, query, (room_number,))
-        count_bookings = result[0][0]  # Получаем количество бронирований для этого номера
+        count_bookings = result[0][0]  # Количество бронирований для этого номера
 
         if count_bookings > 0:
             messagebox.showwarning("Ошибка", "Невозможно удалить номер, так как на него есть брони!")
             return
 
-        # Подтверждение удаления номера
         confirmation = messagebox.askyesno("Подтверждение удаления", "Вы уверены, что хотите удалить этот номер?")
         if confirmation:
             query = "DELETE FROM Rooms WHERE room_number = ?"
@@ -170,10 +168,10 @@ def edit_room(tree):
             return
 
         try:
-            # Проверка, изменился ли номер комнаты
+            # Проверка
             new_room_number = updated_data["room_number"]
             if str(room_number) != new_room_number:
-                # Если номер изменился, проверяем, существует ли новый номер
+                # Если номер изменился, проверяем существует ли новый номер
                 query_check_existing = "SELECT COUNT(*) FROM Rooms WHERE room_number = ?"
                 result = execute_query(DB_PATH,
                                        query_check_existing, (new_room_number,))
@@ -181,12 +179,11 @@ def edit_room(tree):
                     messagebox.showwarning("Ошибка", "Номер уже существует!")
                     return
 
-                # Обновляем номер в таблице `Rooms` и связанных записях в `Bookings`
+                # Обновление номера в таблице 'Rooms' и связанных записях в 'Bookings'
                 query_update_room_number = "UPDATE Bookings SET room_number = ? WHERE room_number = ?"
                 execute_query(DB_PATH,
                               query_update_room_number, (new_room_number, room_number))
 
-            # Обновление данных номера
             query = '''
                 UPDATE Rooms
                 SET room_type = ?, room_number = ?, price = ?, availability = ?
@@ -217,7 +214,7 @@ def edit_room(tree):
     # Ввод данных
     tk.Label(edit_window, text="Номер:", font=("Arial", 14)).pack(pady=5)
     entry_room_number = tk.Entry(edit_window, font=("Arial", 14))
-    entry_room_number.insert(0, room_data[0])  # Используем room_number
+    entry_room_number.insert(0, room_data[0])  # room_number
     entry_room_number.pack()
 
     # Если есть брони, номер комнаты нельзя редактировать
@@ -257,21 +254,17 @@ def open_room_management(root):
 
     room_window.protocol("WM_DELETE_WINDOW", on_close)
 
-    # Определяем столбцы
-    columns = ("Номер", "Тип номера", "Цена", "Доступность")
+    columns = ("Номер", "Тип номера", "Цена, руб.", "Доступность")
     tree = ttk.Treeview(room_window, columns=columns, show="headings", height=15)
 
-    # Настраиваем ширину столбцов
-    tree.column("Номер", width=30)          # Узкий столбец для номера
-    tree.column("Тип номера", width=70)     # Широкий столбец для типа номера
-    tree.column("Цена", width=50)           # Узкий столбец для цены
-    tree.column("Доступность", width=150)    # Средний столбец для доступности
+    tree.column("Номер", width=30)          # Узкий столбец
+    tree.column("Тип номера", width=70)     # Широкий столбец
+    tree.column("Цена, руб.", width=50)           # Узкий столбец
+    tree.column("Доступность", width=150)    # Средний столбец
 
-    # Настраиваем заголовки
     for col in columns:
         tree.heading(col, text=col)
 
-    # Добавляем вертикальный скроллбар
     scrollbar = ttk.Scrollbar(room_window, orient="vertical", command=tree.yview)
     tree.configure(yscrollcommand=scrollbar.set)
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -303,5 +296,4 @@ def open_room_management(root):
 
     search_entry.bind("<KeyRelease>", on_search_change)
 
-    # Загружаем номера в таблицу
     load_rooms(tree)

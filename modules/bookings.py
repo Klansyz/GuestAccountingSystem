@@ -6,14 +6,9 @@ from config import DB_PATH
 
 # Загрузка данных броней из базы данных
 def load_bookings(tree, search_query=""):
-    """
-    Загружает данные о бронированиях в Treeview.
-    """
-    # Очистка текущих данных в Treeview
     for row in tree.get_children():
         tree.delete(row)
 
-    # SQL-запрос для получения данных о бронированиях
     query = '''
     SELECT 
         b.booking_id, 
@@ -37,27 +32,23 @@ def load_bookings(tree, search_query=""):
     ORDER BY b.booking_id DESC
     '''
 
-    # Формирование параметров для поиска
-    params = tuple(f"%{search_query}%" for _ in range(7))  # 7 условий для поиска
+    params = tuple(f"%{search_query}%" for _ in range(7))
 
     results = execute_query(DB_PATH, query, params)
 
-    # Заполнение Treeview новыми данными
     for row in results:
-        # Порядок значений в соответствии с колонками Treeview
         tree.insert("", "end", values=row)
 
 
 # Добавление брони
 def add_booking(tree):
     def save_booking():
-        # Получение ID гостя и номера комнаты из выбранных значений
         selected_guest = var_guest.get()
         selected_room = var_room.get()
         if selected_guest and selected_room:
             booking_data = {
-                "guest_id": selected_guest.split(" - ")[0],  # Извлечение guest_id
-                "room_number": selected_room.split(" - ")[0],  # Извлечение room_number
+                "guest_id": selected_guest.split(" - ")[0],  # guest_id
+                "room_number": selected_room.split(" - ")[0],  # room_number
                 "checking_date": entry_checking_date.get(),
                 "checkout_date": entry_checkout_date.get(),
                 "status": var_status.get(),
@@ -67,7 +58,6 @@ def add_booking(tree):
             messagebox.showwarning("Предупреждение", "Выберите гостя и номер комнаты!")
             return
 
-        # Проверка обязательных данных
         if not booking_data["checking_date"] or not booking_data["checkout_date"]:
             messagebox.showwarning("Предупреждение", "Все поля обязательны для заполнения!")
             return
@@ -78,7 +68,6 @@ def add_booking(tree):
             return
 
         try:
-            # Вставка новой брони
             query = '''
                 INSERT INTO Bookings (guest_id, room_number, checking_date, checkout_date, status, notes)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -88,7 +77,6 @@ def add_booking(tree):
                       booking_data["status"], booking_data["notes"])
             execute_query(DB_PATH, query, params)
 
-            # Обновление доступности номера
             # update_room_availability(booking_data["room_number"])
 
             messagebox.showinfo("Успех", "Бронь добавлена!")
@@ -108,7 +96,6 @@ def add_booking(tree):
 
     add_window.protocol("WM_DELETE_WINDOW", on_close_add_window)
 
-    # Поля ввода
     tk.Label(add_window, text="Гость:", font=("Arial", 14)).pack(pady=5)
 
     # Выпадающий список гостей
@@ -119,7 +106,7 @@ def add_booking(tree):
 
     tk.Label(add_window, text="Номер:", font=("Arial", 14)).pack(pady=5)
 
-    # Выпадающий список комнат
+    # Выпадающий список комна
     var_room = tk.StringVar(value="")
     room_options = load_rooms()
     room_menu = ttk.Combobox(add_window, textvariable=var_room, values=room_options, font=("Arial", 14), state="readonly")
@@ -158,13 +145,11 @@ def delete_booking(tree):
 
     booking_id = tree.item(selected_item)["values"][0]
 
-    # Подтверждение удаления
     confirmation = messagebox.askyesno("Подтверждение удаления", "Вы уверены, что хотите удалить эту бронь?")
     if not confirmation:
         return
 
     try:
-        # Проверка наличия связанных счетов
         bills_query = "SELECT bill_id FROM Bills WHERE booking_id = ?"
         bills = execute_query(DB_PATH, bills_query, (booking_id,))
 
@@ -183,11 +168,9 @@ def delete_booking(tree):
         delete_booking_query = "DELETE FROM Bookings WHERE booking_id = ?"
         execute_query(DB_PATH, delete_booking_query, (booking_id,))
 
-        # Уведомление об успешном удалении
         messagebox.showinfo("Успех", "Бронь успешно удалена!")
-        load_bookings(tree)  # Обновление данных в таблице
+        load_bookings(tree)  # Обновление данных
     except Exception as e:
-        # Отображение ошибки
         messagebox.showerror("Ошибка", f"Не удалось удалить бронь: {e}")
 
 
@@ -201,13 +184,12 @@ def edit_booking(tree):
     booking_data = tree.item(selected_item)["values"]
 
     def save_changes():
-        # Получение ID гостя и номера комнаты из выбранных значений
         selected_guest = var_guest.get()
         selected_room = var_room.get()
         if selected_guest and selected_room:
             updated_data = {
-                "guest_id": selected_guest.split(" - ")[0],  # Извлечение guest_id
-                "room_number": selected_room.split(" - ")[0],  # Извлечение room_number
+                "guest_id": selected_guest.split(" - ")[0],
+                "room_number": selected_room.split(" - ")[0],
                 "checking_date": entry_checking_date.get(),
                 "checkout_date": entry_checkout_date.get(),
                 "status": var_status.get(),
@@ -217,12 +199,10 @@ def edit_booking(tree):
             messagebox.showwarning("Предупреждение", "Выберите гостя и номер комнаты!")
             return
 
-        # Проверка обязательных данных
         if not updated_data["checking_date"] or not updated_data["checkout_date"]:
             messagebox.showwarning("Предупреждение", "Все поля обязательны для заполнения!")
             return
 
-        # Проверка дат
         if not validate_date(updated_data["checking_date"]) or not validate_date(updated_data["checkout_date"]):
             messagebox.showwarning("Предупреждение", "Дата должна быть в формате ДД.ММ.ГГГГ!")
             return
@@ -263,10 +243,9 @@ def edit_booking(tree):
 
     edit_window.protocol("WM_DELETE_WINDOW", on_close_edit_window)
 
-    # Поля ввода
+    # Поля
     tk.Label(edit_window, text="Гость:", font=("Arial", 14)).pack(pady=5)
 
-    # Выпадающий список гостей
     guest_id, guest_name = booking_data[1].split(" - ", 1)
     var_guest = tk.StringVar(value=f"{guest_id} - {guest_name}")
     guest_options = load_guests()
@@ -275,7 +254,6 @@ def edit_booking(tree):
 
     tk.Label(edit_window, text="Номер:", font=("Arial", 14)).pack(pady=5)
 
-    # Выпадающий список комнат
     room_number, room_type = booking_data[2].split(" - ", 1)
     var_room = tk.StringVar(value=f"{room_number} - {room_type}")
     room_options = load_rooms()
@@ -317,7 +295,7 @@ def calculate_bill(tree):
 
     booking_id, status = tree.item(selected_booking[0], "values")[0:2]
 
-    # Получаем данные о стоимости номера
+    # Данные о стоимости номера
     query = '''
         SELECT r.price
         FROM Bookings b
@@ -332,7 +310,7 @@ def calculate_bill(tree):
 
     price_per_day = booking_details[0][0]
 
-    # Создаем окно для ввода количества дней и расчета
+    # Новое окно
     calculate_window = tk.Toplevel()
     calculate_window.transient(booking_window)
     setup_window(calculate_window, "Расчет стоимости", 400, 300)
@@ -347,7 +325,6 @@ def calculate_bill(tree):
 
     def perform_calculation():
         try:
-            # Проверяем, что значение указано и корректно
             days_text = days_var.get()
             if not days_text.isdigit():
                 raise ValueError("Введите положительное целое число!")
@@ -356,10 +333,9 @@ def calculate_bill(tree):
             if days <= 0:
                 raise ValueError("Количество дней должно быть больше 0!")
 
-            # Расчет стоимости номера
+            # Расчет стоимости
             room_total = days * price_per_day
 
-            # Получаем услуги для брони
             services_query = '''
                 SELECT s.service_id, s.price, s.service_type
                 FROM Booking_Services bs
@@ -377,7 +353,6 @@ def calculate_bill(tree):
 
             total_amount = room_total + services_total
 
-            # Сохраняем данные в таблицу "Bills"
             insert_query = '''
                 INSERT INTO Bills (booking_id, total_amount, payment_status)
                 VALUES (?, ?, 'Не оплачен')
@@ -406,7 +381,7 @@ def manage_services(tree):
         messagebox.showwarning("Предупреждение", "Выберите бронь для управления услугами!")
         return
 
-    booking_id = tree.item(selected_booking[0], "values")[0]  # Получаем ID брони
+    booking_id = tree.item(selected_booking[0], "values")[0]  # ID брони
 
     def save_service_changes():
         try:
@@ -424,7 +399,7 @@ def manage_services(tree):
 
             messagebox.showinfo("Успех", "Изменения успешно сохранены!")
             services_window.destroy()
-            load_bookings(tree)  # Обновляем таблицу броней
+            load_bookings(tree)
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось сохранить изменения: {e}")
 
@@ -470,11 +445,12 @@ def manage_services(tree):
 
     # Создание окна
     services_window = tk.Toplevel()
+    services_window.transient(booking_window)
+    services_window.resizable(False, False)
     setup_window(services_window, "Управление услугами", 1000, 600)
 
     tk.Label(services_window, text=f"Услуги для брони: {booking_id}", font=("Arial", 20, "bold")).pack(pady=20)
 
-    # Таблица услуг
     columns = ("ID", "Название", "Цена", "Описание", "Тип", "Выбрано")
     services_tree = ttk.Treeview(services_window, columns=columns, show="headings", height=15)
 
@@ -498,7 +474,6 @@ def manage_services(tree):
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
     services_tree.pack(pady=20, fill=tk.BOTH, expand=True)
 
-    # Фрейм с кнопками управления
     button_frame = tk.Frame(services_window)
     button_frame.pack(pady=10)
 
@@ -514,16 +489,20 @@ def manage_services(tree):
     search_entry = tk.Entry(search_frame, font=("Arial", 14))
     search_entry.grid(row=0, column=1, padx=10)
 
+    def on_close_services_window():
+        services_window.destroy()
+
+    services_window.protocol("WM_DELETE_WINDOW", on_close_services_window)
+
     def on_search_change(event):
         search_query = search_entry.get()
         load_service_data_with_checkbox(search_query)
 
     search_entry.bind("<KeyRelease>", on_search_change)
 
-    # Загрузка данных
     load_service_data_with_checkbox()
 
-    # Привязываем событие изменения чекбокса
+    # Изменение чекбокса
     services_tree.bind("<ButtonRelease-1>", toggle_checkbox)
 
 
@@ -543,26 +522,20 @@ def open_booking_management(root):
 
     booking_window.protocol("WM_DELETE_WINDOW", on_close)
 
-    # Изменяем название столбца
     columns = ("ID", "Гость", "Номер", "Дата заезда", "Дата выезда", "Статус", "Примечания")
     tree = ttk.Treeview(booking_window, columns=columns, show="headings", height=15)
 
-    # Настроим ширину столбцов так, чтобы столбцы "Гость" и "Примечания" имели достаточно места
-    tree.column("ID", width=40)  # Столбец ID, остаётся узким
-    tree.column("Гость", width=200)  # Увеличиваем ширину столбца Гость
-    tree.column("Номер", width=150)  # Столбец Номер, можно оставить узким
-    tree.column("Дата заезда", width=120)  # Столбец Дата заезда
-    tree.column("Дата выезда", width=120)  # Столбец Дата выезда
-    tree.column("Статус", width=120)  # Столбец Статус
+    tree.column("ID", width=40)
+    tree.column("Гость", width=200)
+    tree.column("Номер", width=150)
+    tree.column("Дата заезда", width=120)
+    tree.column("Дата выезда", width=120)
+    tree.column("Статус", width=120)
+    tree.column("Примечания", width=250, stretch=True)
 
-    # Увеличиваем столбец Примечания, чтобы там было больше места
-    tree.column("Примечания", width=250, stretch=True)  # Столбец Примечания
-
-    # Заголовки столбцов
     for col in columns:
         tree.heading(col, text=col)
 
-    # Добавим вертикальный скроллбар
     scrollbar = ttk.Scrollbar(booking_window, orient="vertical", command=tree.yview)
     tree.configure(yscrollcommand=scrollbar.set)
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)

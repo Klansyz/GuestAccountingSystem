@@ -1,4 +1,3 @@
-import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 from utils import setup_window, execute_query
@@ -8,7 +7,6 @@ from config import DB_PATH
 # Загрузка услуг
 def load_services(tree, search_query=""):
     try:
-        # Обновленный запрос
         query = """
             SELECT 
                 s.service_id, 
@@ -27,19 +25,16 @@ def load_services(tree, search_query=""):
                    OR CAST(s.service_type AS TEXT) LIKE ?
                    OR CAST(s.availability AS TEXT) LIKE ?
             """
-            # Параметры для поиска
             params = ('%' + search_query + '%',) * 5
         else:
             params = ()
 
-        # Выполняем запрос
+        # Запрос
         rows = execute_query(DB_PATH, query, params)
 
-        # Очищаем дерево
         for row in tree.get_children():
             tree.delete(row)
 
-        # Загружаем данные в дерево
         for row in rows:
             tree.insert("", "end", values=row)
 
@@ -53,7 +48,7 @@ def add_service(tree):
         service_data = {
             "service_name": entry_service_name.get(),
             "price": entry_price.get(),
-            "description": entry_description.get("1.0", "end-1c"),  # Получаем текст из поля Text
+            "description": entry_description.get("1.0", "end-1c"),  # Получаем текст из поля Text!!
             "service_type": service_type_var.get(),
             "availability": availability_var.get()
         }
@@ -67,7 +62,6 @@ def add_service(tree):
             return
 
         try:
-            # Включаем описание услуги, тип и доступность в запрос
             query = '''
                 INSERT INTO Services (service_name, price, description, service_type, availability)
                 VALUES (?, ?, ?, ?, ?)
@@ -91,7 +85,7 @@ def add_service(tree):
     add_window.title("Добавить услугу")
     add_window.transient(service_window)
     add_window.resizable(False, False)
-    setup_window(add_window, "Добавить услугу", 400, 600)  # Увеличиваем высоту окна для описания
+    setup_window(add_window, "Добавить услугу", 400, 600)
 
     def on_close_add_window():
         add_window.destroy()
@@ -107,25 +101,23 @@ def add_service(tree):
     entry_price = tk.Entry(add_window, font=("Arial", 14))
     entry_price.pack()
 
-    # Поле для описания услуги
     tk.Label(add_window, text="Описание услуги:", font=("Arial", 14)).pack(pady=5)
-    entry_description = tk.Text(add_window, font=("Arial", 14), height=6, width=30)  # Многострочное поле
+    entry_description = tk.Text(add_window, font=("Arial", 14), height=6, width=30)
     entry_description.pack(pady=5)
 
-    # Выпадающий список для типа услуги
+    # Выпадающий список
     tk.Label(add_window, text="Тип услуги:", font=("Arial", 14)).pack(pady=5)
-    service_type_var = tk.StringVar(value="Разовая")  # Значение по умолчанию
+    service_type_var = tk.StringVar(value="Разовая")
     service_type_options = ["Разовая", "Ежедневная"]
     service_type_menu = ttk.Combobox(add_window, textvariable=service_type_var, values=service_type_options, font=("Arial", 14), state="readonly")
     service_type_menu.pack(pady=5)
 
-    # Флажок для доступности услуги
+    # Флажок для доступности
     tk.Label(add_window, text="Доступность:", font=("Arial", 14)).pack(pady=5)
-    availability_var = tk.BooleanVar(value=True)  # По умолчанию услуга доступна
+    availability_var = tk.BooleanVar(value=True)
     availability_check = tk.Checkbutton(add_window, text="Доступна", variable=availability_var)
     availability_check.pack(pady=5)
 
-    # Кнопка сохранения
     tk.Button(add_window, text="Сохранить", font=("Arial", 14), command=save_service).pack(pady=20)
 
 
@@ -139,7 +131,7 @@ def delete_service(tree):
     service_id = tree.item(selected_item)["values"][0]
 
     try:
-        # Проверяем, используется ли услуга в актуальных бронях
+        # Проверяем в актуальных бронях
         query_check = """
             SELECT COUNT(*) 
             FROM Booking_Services bs
@@ -147,7 +139,7 @@ def delete_service(tree):
             WHERE bs.service_id = ? AND b.status IN ('Забронировано', 'Проживание', 'Выполнено', 'Отменено')
         """
         result = execute_query(DB_PATH, query_check, (service_id,))
-        if result[0][0] > 0:  # Если услуга связана с актуальными бронями
+        if result[0][0] > 0:
             messagebox.showwarning(
                 "Удаление невозможно",
                 "Эта услуга используется в бронях и не может быть удалена."
@@ -179,7 +171,7 @@ def edit_service(tree):
         updated_data = {
             "service_name": entry_service_name.get(),
             "price": entry_price.get(),
-            "description": entry_description.get("1.0", "end-1c"),  # Получаем текст из поля Text
+            "description": entry_description.get("1.0", "end-1c"),
             "service_type": service_type_var.get(),
             "availability": availability_var.get()
         }
@@ -193,11 +185,7 @@ def edit_service(tree):
             return
 
         try:
-            # Начинаем транзакцию
-            connection = sqlite3.connect(DB_PATH)
-            cursor = connection.cursor()
-
-            # Обновляем услугу
+            # Обновление данных услуги
             query = '''
                 UPDATE Services
                 SET service_name = ?, price = ?, description = ?, service_type = ?, availability = ?
@@ -211,10 +199,10 @@ def edit_service(tree):
                 updated_data["availability"],
                 service_data[0]  # service_id
             )
-            cursor.execute(query, params)
+            execute_query(DB_PATH, query, params)
 
-            # Если доступность изменилась на недоступную, удаляем услугу из актуальных броней
-            if not updated_data["availability"]:  # Если доступность стала False (0)
+            # Если доступность изменилась на недоступно
+            if not updated_data["availability"]:
                 delete_query = '''
                     DELETE FROM Booking_Services
                     WHERE service_id = ? AND booking_id IN (
@@ -222,30 +210,23 @@ def edit_service(tree):
                         FROM Bookings
                     )
                 '''
-                cursor.execute(delete_query, (service_data[0],))
+                execute_query(DB_PATH, delete_query, (service_data[0],))
                 messagebox.showinfo(
                     "Информация",
                     "Услуга стала недоступной и была удалена из всех актуальных броней."
                 )
 
-            # Фиксируем изменения
-            connection.commit()
-            connection.close()
-
-            # Сообщение об успешном сохранении
             messagebox.showinfo("Успех", "Данные услуги обновлены!")
             edit_window.destroy()
             load_services(tree)
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось обновить услугу: {e}")
-            connection.rollback()
-            connection.close()
 
     edit_window = tk.Toplevel()
     edit_window.title("Редактировать услугу")
     edit_window.transient(service_window)
     edit_window.resizable(False, False)
-    setup_window(edit_window, "Редактировать услугу", 400, 600)  # Увеличиваем высоту окна для описания
+    setup_window(edit_window, "Редактировать услугу", 400, 600)
 
     def on_close_edit_window():
         edit_window.destroy()
@@ -255,34 +236,32 @@ def edit_service(tree):
     # Поля ввода
     tk.Label(edit_window, text="Название услуги:", font=("Arial", 14)).pack(pady=5)
     entry_service_name = tk.Entry(edit_window, font=("Arial", 14))
-    entry_service_name.insert(0, service_data[1])  # Используем service_name
+    entry_service_name.insert(0, service_data[1])  # service_name
     entry_service_name.pack()
 
     tk.Label(edit_window, text="Цена:", font=("Arial", 14)).pack(pady=5)
     entry_price = tk.Entry(edit_window, font=("Arial", 14))
-    entry_price.insert(0, service_data[2])  # Используем price
+    entry_price.insert(0, service_data[2])
     entry_price.pack()
 
-    # Поле для описания услуги
     tk.Label(edit_window, text="Описание услуги:", font=("Arial", 14)).pack(pady=5)
     entry_description = tk.Text(edit_window, font=("Arial", 14), height=6, width=30)  # Многострочное поле
-    entry_description.insert("1.0", service_data[3])  # Вставляем описание услуги
+    entry_description.insert("1.0", service_data[3])
     entry_description.pack(pady=5)
 
-    # Выпадающий список для типа услуги
+    # Выпадающий список
     tk.Label(edit_window, text="Тип услуги:", font=("Arial", 14)).pack(pady=5)
-    service_type_var = tk.StringVar(value=service_data[4])  # Устанавливаем значение типа услуги
+    service_type_var = tk.StringVar(value=service_data[4])  # Значение типа услуги
     service_type_options = ["Разовая", "Ежедневная"]
     service_type_menu = ttk.Combobox(edit_window, textvariable=service_type_var, values=service_type_options, font=("Arial", 14), state="readonly")
     service_type_menu.pack(pady=5)
 
-    # Поле для доступности услуги (флажок)
+    # Флажок
     tk.Label(edit_window, text="Доступность:", font=("Arial", 14)).pack(pady=5)
     availability_var = tk.BooleanVar(value=service_data[5] == 1)  # Если доступность = 1, то True
     availability_check = tk.Checkbutton(edit_window, text="Доступна", variable=availability_var)
     availability_check.pack(pady=5)
 
-    # Кнопка сохранения изменений
     tk.Button(edit_window, text="Сохранить изменения", font=("Arial", 14), command=save_changes).pack(pady=20)
 
 
@@ -302,17 +281,15 @@ def open_service_management(root):
 
     service_window.protocol("WM_DELETE_WINDOW", on_close)
 
-    # Обновленные колонки с учётом новых полей
-    columns = ("ID", "Название услуги", "Цена", "Описание", "Тип услуги", "Доступность")
+    columns = ("ID", "Название услуги", "Цена, руб.", "Описание", "Тип услуги", "Доступность")
     tree = ttk.Treeview(service_window, columns=columns, show="headings", height=15)
 
-    # Настроим ширину столбцов
-    tree.column("ID", width=30, anchor="center")  # Узкий столбец для ID услуги (~5 символов)
-    tree.column("Название услуги", width=100)  # Широкий столбец для названия услуги
-    tree.column("Цена", width=50)  # Средний столбец для цены
-    tree.column("Описание", width=400)  # Столбец для описания
-    tree.column("Тип услуги", width=100)  # Новый столбец для типа услуги
-    tree.column("Доступность", width=100)  # Новый столбец для доступности
+    tree.column("ID", width=30, anchor="center")  # (~5 символов)
+    tree.column("Название услуги", width=100)
+    tree.column("Цена, руб.", width=50)
+    tree.column("Описание", width=400)
+    tree.column("Тип услуги", width=100)
+    tree.column("Доступность", width=100)
 
     for col in columns:
         tree.heading(col, text=col)

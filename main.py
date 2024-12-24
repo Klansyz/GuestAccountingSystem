@@ -27,7 +27,7 @@ def login(event=None):
     if admin:
         admin_name = f"{admin[1]} {admin[2]}"  # Получаем имя администратора из БД
         messagebox.showinfo("Успех", f"Добро пожаловать, {admin_name}!")
-        login_window.destroy()  # Закрываем окно входа
+        login_window.destroy()
         open_main_menu(admin_name)  # Передаем имя администратора в главное меню
     else:
         messagebox.showerror("Ошибка", "Неверный логин или пароль!")
@@ -52,7 +52,7 @@ def open_main_menu(admin_name):
     frame_menu.pack(pady=30)
 
     # Создание кнопок
-    font_size = ("Arial", 18, "bold")  # Увеличенный шрифт
+    font_size = ("Arial", 18, "bold")
 
     btn_guests = tk.Button(frame_menu, text="Гости", command=lambda: open_guest_management(root), font=font_size,
                            width=30, height=3)
@@ -73,7 +73,6 @@ def open_main_menu(admin_name):
     btn_bills.grid(row=1, column=1, padx=30, pady=20)
     btn_bookings.grid(row=2, column=0, columnspan=2, padx=30, pady=20)  # Растянутая кнопка
 
-    # Кнопка выхода
     btn_logout = tk.Button(root, text="Выйти", command=logout, font=font_size, width=30, height=3)
     btn_logout.pack(pady=5)
 
@@ -116,10 +115,9 @@ def open_login_window():
     btn_login = tk.Button(login_window, text="Войти", command=login, font=("Arial", 14), width=15, height=1)
     btn_login.pack(pady=5)
 
-    # Привязываем событие нажатия клавиши Enter к функции login()
+    # ПривязкаEnter к функции login()
     login_window.bind('<Return>', login)
 
-    # Запуск окна входа
     login_window.mainloop()
 
 

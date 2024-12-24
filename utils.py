@@ -6,19 +6,11 @@ from config import DB_PATH
 
 def setup_window(window, title, width, height, resizable=False):
     """
-    Настраивает окно: устанавливает заголовок, размеры, центрирует его на экране и задаёт возможность изменения размеров.
-
-    Args:
-        window: объект окна Tkinter (tk.Tk или tk.Toplevel).
-        title: заголовок окна.
-        width: ширина окна.
-        height: высота окна.
-        resizable: флаг, разрешать ли изменять размер окна (по умолчанию False).
+    Настраивает окно
     """
-    # Устанавливаем заголовок окна
     window.title(title)
 
-    # Устанавливаем возможность изменения размера
+    # Изменения размера
     window.resizable(resizable, resizable)
 
     # Центрируем окно
@@ -36,7 +28,6 @@ def execute_query(db_path, query, params=None):
 
         cursor = conn.cursor()
 
-        # Выполнение запроса
         if params:
             cursor.execute(query, params)
         else:
@@ -60,13 +51,12 @@ def format_date_input(event, entry):
     # Убираем все символы, кроме цифр
     date_text = re.sub(r'\D', '', date_text)
 
-    # Разбиваем строку на части
     if len(date_text) > 2:
         date_text = date_text[:2] + '.' + date_text[2:]
     if len(date_text) > 5:
         date_text = date_text[:5] + '.' + date_text[5:]
 
-    # Обновляем поле ввода с отформатированным текстом
+    # Отформатированный текст
     entry.delete(0, tk.END)
     entry.insert(0, date_text)
 
@@ -88,7 +78,7 @@ def load_guests():
     return [f"{row[0]} - {row[1]}" for row in results]
 
 
-# Загружает список доступных комнат из базы данных. Для добавления и изменения броней.
+# Загружает список доступных комнат из базы данных для добавления и изменения броней.
 def load_rooms():
     query = '''
     SELECT room_number, room_type 

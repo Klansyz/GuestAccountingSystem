@@ -7,9 +7,6 @@ from config import DB_PATH
 
 # Загрузка данных гостей из базы данных
 def load_guests(tree, search_query=""):
-    """
-    Загружает данные гостей в Treeview с учётом фильтрации по поисковому запросу.
-    """
     try:
         # Базовый SQL-запрос
         query = """
@@ -19,22 +16,16 @@ def load_guests(tree, search_query=""):
         ORDER BY guest_id DESC
         """
 
-        # Подготавливаем параметры для поиска (включая guest_id)
         params = tuple(f"%{search_query}%" for _ in range(7))
-
-        # Выполняем SQL-запрос
         rows = execute_query(DB_PATH, query, params)
 
-        # Очищаем дерево перед загрузкой данных
         for row in tree.get_children():
             tree.delete(row)
 
-        # Заполняем дерево новыми данными
         for row in rows:
             tree.insert("", "end", values=row)
 
     except Exception as e:
-        # Отображаем сообщение об ошибке
         messagebox.showerror("Ошибка", f"Не удалось загрузить данные гостей: {e}")
 
 
@@ -64,7 +55,7 @@ def add_guest(tree):
 
             messagebox.showinfo("Успех", "Гость добавлен!")
             add_window.destroy()
-            load_guests(tree)  # Обновляем таблицу
+            load_guests(tree)
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось добавить гостя: {e}")
 
@@ -108,7 +99,7 @@ def add_guest(tree):
     tk.Button(add_window, text="Сохранить", font=("Arial", 14), command=save_guest).pack(pady=20)
 
 
-# Удаление гостя с подтверждением
+# Удаление гостя
 def delete_guest(tree):
     selected_item = tree.selection()
     if not selected_item:
@@ -118,16 +109,15 @@ def delete_guest(tree):
     guest_id = tree.item(selected_item)["values"][0]
 
     try:
-        # Проверка наличия брони у гостя
+        # Проверка
         query = "SELECT COUNT(*) FROM Bookings WHERE guest_id = ?"
         result = execute_query(DB_PATH, query, (guest_id,))
-        count_bookings = result[0][0]  # Получаем количество бронирований для данного гостя
+        count_bookings = result[0][0]  # Количество бронирований для данного гостя
 
         if count_bookings > 0:
             messagebox.showwarning("Ошибка", "Невозможно удалить гостя, так как у него есть брони!")
             return
 
-        # Если у гостя нет брони, удаляем его
         confirmation = messagebox.askyesno("Подтверждение удаления", "Вы уверены, что хотите удалить этого гостя?")
         if confirmation:
             query = "DELETE FROM Guests WHERE guest_id = ?"
@@ -232,7 +222,7 @@ def copy_guest(tree):
 
     guest_data = tree.item(selected_item)["values"]
 
-    # Собираем данные в строку, которую будем копировать в буфер обмена
+    # В строку
     clipboard_text = f"Фамилия: {guest_data[1]}\n" \
                      f"Имя: {guest_data[2]}\n" \
                      f"Отчество: {guest_data[3]}\n" \
@@ -240,16 +230,14 @@ def copy_guest(tree):
                      f"Email: {guest_data[5]}\n" \
                      f"Паспорт: {guest_data[6]}"
 
-    # Копируем в буфер обмена
+    # Буфер обмена
     pyperclip.copy(clipboard_text)
 
-    # Выводим сообщение об успешном копировании
     messagebox.showinfo("Успех", "Данные скопированы в буфер обмена!")
 
 
 # Поиск гостей в базе данных
 # def search_guests(tree, search_query):
-#     # Функция для загрузки данных гостей по запросу
 #     load_guests(tree, search_query)
 
 
@@ -274,17 +262,17 @@ def open_guest_management(root):
 
     for col in columns:
         if col == "ID":
-            tree.column(col, width=40)  # Для ID вмещает 4 символа
+            tree.column(col, width=40)  # 4 символа
         elif col in ["Фамилия", "Имя", "Отчество"]:
-            tree.column(col, width=120)  # Для Фамилии, Имени и Отчества вмещает 10 символов
+            tree.column(col, width=120)  # 10
         elif col == "Телефон":
-            tree.column(col, width=160)  # Для Телефона вмещает 20 символов
+            tree.column(col, width=160)  # 20
         elif col == "Email":
-            tree.column(col, width=280)  # Для Email вмещает 35 символов
+            tree.column(col, width=280)  # 35
         elif col == "Паспорт":
-            tree.column(col, width=120)  # Для Паспорта вмещает 15 символов
+            tree.column(col, width=120)  # 15
         else:
-            tree.column(col, width=130)  # Ширина по умолчанию для остальных столбцов
+            tree.column(col, width=130)  # По умолчанию
         tree.heading(col, text=col)
 
     scrollbar = ttk.Scrollbar(guest_window, orient="vertical", command=tree.yview)
@@ -313,9 +301,9 @@ def open_guest_management(root):
     search_entry.grid(row=0, column=1, padx=10)
 
     # Событие, которое срабатывает при каждом изменении текста в поле ввода
-    def on_search_change(event):
-        search_query = search_entry.get()  # Получаем текст из поля поиска
-        load_guests(tree, search_query)  # Выполняем поиск
+    def on_search_change(event): # event обязателен
+        search_query = search_entry.get()
+        load_guests(tree, search_query)
 
     search_entry.bind("<KeyRelease>", on_search_change)  # Привязываем событие к изменению текста
 
