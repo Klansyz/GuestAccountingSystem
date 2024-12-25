@@ -52,6 +52,21 @@ CREATE TABLE IF NOT EXISTS Rooms (
 ''')
 
 
+'''
+DROP TRIGGER "main"."increase_price_for_luxury_on_holidays";
+CREATE TRIGGER increase_price_for_luxury_on_holidays
+AFTER INSERT ON Bookings
+FOR EACH ROW
+WHEN (NEW.checking_date IN ('25.12.2024', '26.12.2024') AND 
+      EXISTS (SELECT 1 FROM Rooms WHERE room_number = NEW.room_number AND room_type = 'Люкс'))
+BEGIN
+    UPDATE Rooms
+    SET price = price * 1.20
+    WHERE room_number = NEW.room_number;
+END
+'''
+
+
 # Создание таблицы "Услуги"
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS Services (
